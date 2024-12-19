@@ -40,3 +40,9 @@ export class SiteError extends Error {
         this.code = code;
     }
 }
+
+export class InvalidJSONStringError extends Error {
+    constructor(message?: string, options?: ErrorOptions) {
+        super(message, options);
+    }
+}

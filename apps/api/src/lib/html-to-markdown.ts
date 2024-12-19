@@ -72,23 +72,40 @@ export async function parseMarkdown(html: string | null | undefined): Promise<st
 
   // Fallback to TurndownService if Go parser fails or is not enabled
   var TurndownService = require("turndown");
-  var turndownPluginGfm = require('joplin-turndown-plugin-gfm');
+  var turndownPluginGfm = require("joplin-turndown-plugin-gfm");
 
   const turndownService = new TurndownService();
-  turndownService.addRule("inlineLink", {
-    filter: function (node, options) {
-      return (
-        options.linkStyle === "inlined" &&
-        node.nodeName === "A" &&
-        node.getAttribute("href")
-      );
-    },
-    replacement: function (content, node) {
-      var href = node.getAttribute("href").trim();
-      var title = node.title ? ' "' + node.title + '"' : "";
-      return "[" + content.trim() + "](" + href + title + ")\n";
-    },
-  });
+  // turndownService.addRule("inlineLink", {
+  //   filter: function (node, options) {
+  //     return (
+  //       options.linkStyle === "inlined" &&
+  //       node.nodeName === "A" &&
+  //       node.getAttribute("href")
+  //     );
+  //   },
+  //   replacement: function (content, node) {
+  //     var href = node.getAttribute("href").trim();
+  //     var title = node.title ? ' "' + node.title + '"' : "";
+  //     return "[" + content.trim() + "](" + href + title + ")\n";
+  //   },
+  // });
+  turndownService
+    .addRule("removeUnwantedElements", {
+      filter: function (node, options) {
+        return ["IMG", "BUTTON", "FORM"].includes(node.nodeName);
+      },
+      replacement: function (content, node) {
+        return "";
+      },
+    })
+    .addRule("processLinks", {
+      filter: function (node, options) {
+        return node.nodeName === "A";
+      },
+      replacement: function (content, node) {
+        return content.trim();
+      },
+    });
   var gfm = turndownPluginGfm.gfm;
   turndownService.use(gfm);
 
@@ -129,9 +146,8 @@ function processMultiLineLinks(markdownContent: string): string {
 
 function removeSkipToContentLinks(markdownContent: string): string {
   // Remove [Skip to Content](#page) and [Skip to content](#skip)
-  const newMarkdownContent = markdownContent.replace(
-    /\[Skip to Content\]\(#[^\)]*\)/gi,
-    ""
-  );
+  const newMarkdownContent = markdownContent
+    .replace(/\[Skip to Content\]\(#[^\)]*\)/gi, "")
+    .replace(/\[Skip to main content\]\(#[^\)]*\)/gi, "");
   return newMarkdownContent;
 }

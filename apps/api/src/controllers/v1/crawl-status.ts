@@ -85,42 +85,48 @@ export async function crawlStatusController(req: RequestWithAuth<CrawlStatusPara
 
   let doneJobs: Job[] = [];
 
-  if (end === undefined) { // determine 10 megabyte limit
-    let bytes = 0;
-    const bytesLimit = 10485760; // 10 MiB in bytes
-    const factor = 100; // chunking for faster retrieval
+  // if (end === undefined) { // determine 10 megabyte limit
+  //   let bytes = 0;
+  //   const bytesLimit = 10485760; // 10 MiB in bytes
+  //   const factor = 100; // chunking for faster retrieval
 
-    for (let i = 0; i < doneJobsOrder.length && bytes < bytesLimit; i += factor) {
-      // get current chunk and retrieve jobs
-      const currentIDs = doneJobsOrder.slice(i, i+factor);
-      const jobs = await getJobs(currentIDs);
+  //   for (let i = 0; i < doneJobsOrder.length && bytes < bytesLimit; i += factor) {
+  //     // get current chunk and retrieve jobs
+  //     const currentIDs = doneJobsOrder.slice(i, i+factor);
+  //     const jobs = await getJobs(currentIDs);
 
-      // iterate through jobs and add them one them one to the byte counter
-      // both loops will break once we cross the byte counter
-      for (let ii = 0; ii < jobs.length && bytes < bytesLimit; ii++) {
-        const job = jobs[ii];
-        const state = await job.getState();
+  //     // iterate through jobs and add them one them one to the byte counter
+  //     // both loops will break once we cross the byte counter
+  //     for (let ii = 0; ii < jobs.length && bytes < bytesLimit; ii++) {
+  //       const job = jobs[ii];
+  //       const state = await job.getState();
 
-        if (state === "failed" || state === "active") { // TODO: why is active here? race condition? shouldn't matter tho - MG
-          continue;
-        }
+  //       if (state === "failed" || state === "active") { // TODO: why is active here? race condition? shouldn't matter tho - MG
+  //         continue;
+  //       }
 
-        if (job.returnvalue === undefined) {
-          logger.warn("Job was considered done, but returnvalue is undefined!", { jobId: job.id, state });
-          continue;
-        }
-        doneJobs.push(job);
-        bytes += JSON.stringify(job.returnvalue ?? null).length;
-      }
-    }
+  //       if (job.returnvalue === undefined) {
+  //         logger.warn("Job was considered done, but returnvalue is undefined!", { jobId: job.id, state });
+  //         continue;
+  //       }
+  //       doneJobs.push(job);
+  //       bytes += JSON.stringify(job.returnvalue ?? null).length;
+  //     }
+  //   }
 
-    // if we ran over the bytes limit, remove the last document, except if it's the only document
-    if (bytes > bytesLimit && doneJobs.length !== 1) {
-      doneJobs.splice(doneJobs.length - 1, 1);
-    }
-  } else {
-    doneJobs = (await Promise.all((await getJobs(doneJobsOrder)).map(async x => (await x.getState()) === "failed" ? null : x))).filter(x => x !== null) as Job[];
-  }
+  //   // if we ran over the bytes limit, remove the last document, except if it's the only document
+  //   if (bytes > bytesLimit && doneJobs.length !== 1) {
+  //     doneJobs.splice(doneJobs.length - 1, 1);
+  //   }
+  // } else {
+  doneJobs = (
+    await Promise.all(
+      (
+        await getJobs(doneJobsOrder)
+      ).map(async (x) => ((await x.getState()) === "failed" ? null : x))
+    )
+  ).filter((x) => x !== null) as Job[];
+  // }
 
   const data = doneJobs.map(x => x.returnvalue);
 

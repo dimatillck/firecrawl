@@ -320,6 +320,12 @@ export class WebCrawler {
 
   public isFile(url: string): boolean {
     const fileExtensions = [
+      ".wav",
+      ".xls",
+      ".doc",
+      ".xlsx",
+      ".jfif",
+      ".ppsm",
       ".png",
       ".jpg",
       ".jpeg",

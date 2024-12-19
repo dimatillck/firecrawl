@@ -19,7 +19,7 @@ import { ZodError } from "zod";
 import { v4 as uuidv4 } from "uuid";
 
 const { createBullBoard } = require("@bull-board/api");
-const { BullAdapter } = require("@bull-board/api/bullAdapter");
+const { BullMQAdapter } = require("@bull-board/api/bullMQAdapter");
 const { ExpressAdapter } = require("@bull-board/express");
 
 const numCPUs = process.env.ENV === "local" ? 2 : os.cpus().length;
@@ -47,7 +47,7 @@ const serverAdapter = new ExpressAdapter();
 serverAdapter.setBasePath(`/admin/${process.env.BULL_AUTH_KEY}/queues`);
 
 const { addQueue, removeQueue, setQueues, replaceQueues } = createBullBoard({
-  queues: [new BullAdapter(getScrapeQueue())],
+  queues: [new BullMQAdapter(getScrapeQueue())],
   serverAdapter: serverAdapter,
 });
 

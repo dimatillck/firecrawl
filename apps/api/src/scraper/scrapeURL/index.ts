@@ -169,6 +169,15 @@ async function scrapeURLLoop(
             if (_engineResult.markdown === undefined) { // Some engines emit Markdown directly.
                 _engineResult.markdown = await parseMarkdown(_engineResult.html);
             }
+
+            // try {
+            //     JSON.parse('"' + _engineResult.markdown.replaceAll('"', '') + '"');
+            // } catch (error) {
+            //     console.log('_engineResult.markdown', _engineResult.markdown);
+            //     // throw new InvalidJSONStringError("Engine " + engine + " returned invalid JSON string: " + error.message);
+            //     throw new Error("Engine " + engine + " returned invalid JSON string: " + error.message);
+            // }
+
             const engineResult = _engineResult as EngineScrapeResult & { markdown: string };
 
             // Success factors

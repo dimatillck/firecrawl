@@ -11,6 +11,41 @@ import { downloadFile, fetchFileToBuffer } from "../utils/downloadFile";
 
 type PDFProcessorResult = {html: string, markdown?: string};
 
+function render_page(pageData) {
+    //check documents https://mozilla.github.io/pdf.js/
+    //ret.text = ret.text ? ret.text : "";
+
+    let render_options = {
+        //replaces all occurrences of whitespace with standard spaces (0x20). The default value is `false`.
+        normalizeWhitespace: true,
+        //do not attempt to combine same line TextItem's. The default value is `false`.
+        disableCombineTextItems: true
+    }
+
+    return pageData.getTextContent(render_options)
+        .then(function(textContent) {
+            let lastY, text = '';
+            //https://github.com/mozilla/pdf.js/issues/8963
+            //https://github.com/mozilla/pdf.js/issues/2140
+            //https://gist.github.com/hubgit/600ec0c224481e910d2a0f883a7b98e3
+            //https://gist.github.com/hubgit/600ec0c224481e910d2a0f883a7b98e3
+            for (let item of textContent.items) {
+                if (lastY == item.transform[5] || !lastY){
+                    text += item.str;
+                }  
+                else{
+                    text += '\n' + item.str;
+                }    
+                lastY = item.transform[5];
+            }            
+            //let strings = textContent.items.map(item => item.str);
+            //let text = strings.join("\n");
+            //text = text.replace(/[ ]+/ig," ");
+            //ret.text = `${ret.text} ${text} \n\n`;
+            return text;
+        });
+}
+
 async function scrapePDFWithLlamaParse(meta: Meta, tempFilePath: string): Promise<PDFProcessorResult> {
     meta.logger.debug("Processing PDF document with LlamaIndex", { tempFilePath });
 
@@ -75,11 +110,11 @@ async function scrapePDFWithLlamaParse(meta: Meta, tempFilePath: string): Promis
 async function scrapePDFWithParsePDF(meta: Meta, tempFilePath: string): Promise<PDFProcessorResult> {
     meta.logger.debug("Processing PDF document with parse-pdf", { tempFilePath });
 
-    const result = await PdfParse(await fs.readFile(tempFilePath));
+    const result = await PdfParse(await fs.readFile(tempFilePath), { pagerender: render_page });
     const escaped = escapeHtml(result.text);
 
     return {
-        markdown: escaped,
+        markdown: escaped.replace(/[\u0000-\u001F\u007F-\u009F]/g, ""),
         html: escaped,
     };
 }
